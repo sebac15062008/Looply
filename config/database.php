@@ -7,8 +7,9 @@ class connectionDatabase
 {
   private string $DB_HOST     = "localhost";
   private string $DB_PORT     = "3306";
-  private string $DB_DATABASE = "Looply";
+  private string $DB_DATABASE = "looply_db";
   private string $DB_USERNAME = "root";
+
   private string $DB_PASSWORD = "";
   public  $con;
 

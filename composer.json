@@ -1,0 +1,25 @@
+{
+    "name": "looply/chat",
+    "description": "Looply Chat App",
+    "type": "project",
+    "require": {
+        "cboden/ratchet": "0.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Looply\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Sebastian Cuevas",
+            "email": "sebac152008@gmail.com"
+        }
+    ],
+    "config": {
+        "audit": {
+            "abandoned": "ignore",
+            "ignore": ["PKSA-365x-2zjk-pt47", "PKSA-b35n-565h-rs4q", "PKSA-9w98-4rwq-spxr", "PKSA-324d-pqmd-hptz", "PKSA-nqj4-v43p-2gxc", "PKSA-f8b8-pbjy-s9k8", "PKSA-md26-zdw9-222r", "PKSA-dr6c-z2rf-wh36", "PKSA-rhzp-d9k8-shyq", "PKSA-tf6z-kynr-311v"]
+        }
+    }
+}

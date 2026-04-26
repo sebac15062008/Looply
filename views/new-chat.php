@@ -1,35 +1,38 @@
 <?php
 require_once(__DIR__ . "/../includes/bootstrap.php");
+require_once(__DIR__ . "/../config/database.php");
+require_once(__DIR__ . "/../includes/queries.php");
+redirectIfNotLoggedIn();
+
+$db    = (new connectionDatabase())->con;
+$my_id = $_SESSION['user_id'];
+
+// ─── Directorio de personas ───────────────────────────────────
+$allUsers        = q_get_all_users_except_me($db, $my_id);
+$peopleDirectory = [];
+foreach ($allUsers as $user) {
+    $firstLetter = strtoupper(substr($user['full_name'], 0, 1));
+    $peopleDirectory[$firstLetter][] = [
+        'id'     => $user['id'],
+        'name'   => $user['full_name'],
+        'handle' => '@' . $user['username'],
+    ];
+}
+
+// ─── Sidebar: contactos activos ───────────────────────────────
+$contacts = q_get_sidebar_contacts($db, $my_id);
+
 $pageTitle = "Nuevo Chat - Looply";
 
-$peopleDirectory = [
-    'A' => [['name' => 'Ana Torres', 'handle' => '@ana.torres'], ['name' => 'Adrian Mejia', 'handle' => '@adrian.m']],
-    'B' => [['name' => 'Brenda Lopez', 'handle' => '@brenda.lopez']],
-    'C' => [['name' => 'Carlos Ruiz', 'handle' => '@carlos.ruiz'], ['name' => 'Camila Nunez', 'handle' => '@camila.n']],
-    'D' => [['name' => 'Daniela Perez', 'handle' => '@daniela.p']],
-    'E' => [['name' => 'Eduardo Feliz', 'handle' => '@edu.feliz']],
-    'F' => [['name' => 'Fatima Diaz', 'handle' => '@fatima.d']],
-    'G' => [['name' => 'Gabriel Santos', 'handle' => '@gabriel.s']],
-    'H' => [['name' => 'Helena Cruz', 'handle' => '@helena.cruz']],
-    'I' => [['name' => 'Ismael Reyes', 'handle' => '@ismael.r']],
-    'J' => [['name' => 'Juan Perez', 'handle' => '@juan.perez']],
-    'K' => [['name' => 'Karla Moreno', 'handle' => '@karla.m']],
-    'L' => [['name' => 'Luis Gomez', 'handle' => '@luis.gomez']],
-    'M' => [['name' => 'Maria Garcia', 'handle' => '@maria.g']],
-    'N' => [['name' => 'Natalia Vega', 'handle' => '@natalia.v']],
-    'O' => [['name' => 'Oscar Batista', 'handle' => '@oscar.b']],
-    'P' => [['name' => 'Paola Martinez', 'handle' => '@paola.m']],
-    'Q' => [['name' => 'Quincy Rosario', 'handle' => '@quincy.r']],
-    'R' => [['name' => 'Raul Herrera', 'handle' => '@raul.h']],
-    'S' => [['name' => 'Sofia Castillo', 'handle' => '@sofia.c']],
-    'T' => [['name' => 'Tomas Diaz', 'handle' => '@tomas.d']],
-    'U' => [['name' => 'Uriel Cabrera', 'handle' => '@uriel.c']],
-    'V' => [['name' => 'Valeria Mendez', 'handle' => '@valeria.m']],
-    'W' => [['name' => 'Wendy Polanco', 'handle' => '@wendy.p']],
-    'X' => [['name' => 'Ximena Ortiz', 'handle' => '@ximena.o']],
-    'Y' => [['name' => 'Yadiel Pena', 'handle' => '@yadiel.p']],
-    'Z' => [['name' => 'Zoe Ramirez', 'handle' => '@zoe.r']],
-];
+
+function getInitials($name) {
+    $words = explode(" ", $name);
+    $initials = "";
+    foreach ($words as $w) {
+        if (!empty($w)) $initials .= $w[0];
+    }
+    return strtoupper(substr($initials, 0, 2));
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -60,25 +63,28 @@ $peopleDirectory = [
         </div>
 
         <div class="contact-list">
-            <a href="../index.php" class="contact-item text-decoration-none">
-                <div class="avatar-wrapper">
-                    <div class="avatar avatar-initials" aria-label="Juan Perez">JP</div>
+            <?php if (empty($contacts)): ?>
+                <div class="p-5 text-center" style="color: var(--text-bright);">
+                    <i class="bi bi-person-plus mb-3 d-block" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                    <p style="font-size: 0.9rem; line-height: 1.4;">No tienes chats activos.<br>Presiona el botón de <b>+ Nuevo chat</b> para empezar a chatear!</p>
                 </div>
-                <div class="flex-grow-1 overflow-hidden">
-                    <div class="fw-bold" style="color: var(--text-bright); font-size: 0.9rem;">Juan Perez</div>
-                    <div class="text-truncate" style="color: var(--text-dim); font-size: 0.75rem;">Como va ese codigo?</div>
-                </div>
-            </a>
-
-            <a href="../index.php" class="contact-item text-decoration-none">
-                <div class="avatar-wrapper">
-                    <div class="avatar avatar-initials avatar-initials-soft" aria-label="Maria Garcia">MG</div>
-                </div>
-                <div class="flex-grow-1 overflow-hidden">
-                    <div class="fw-bold" style="color: var(--text-bright); font-size: 0.9rem;">Maria Garcia</div>
-                    <div class="text-truncate" style="color: var(--text-dim); font-size: 0.75rem;">Visto hace 10 min</div>
-                </div>
-            </a>
+            <?php else: ?>
+                <?php foreach ($contacts as $contact): ?>
+                <a href="../index.php?user=<?php echo $contact['id']; ?>" class="contact-item text-decoration-none">
+                    <div class="avatar-wrapper">
+                        <div class="avatar avatar-initials" aria-label="<?php echo $contact['full_name']; ?>">
+                            <?php echo getInitials($contact['full_name']); ?>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="fw-bold" style="color: var(--text-bright); font-size: 0.9rem;"><?php echo htmlspecialchars($contact['full_name']); ?></div>
+                        <div class="text-truncate" style="color: var(--text-dim); font-size: 0.75rem;">
+                            <?php echo htmlspecialchars($contact['last_message'] ?? 'Sin mensajes'); ?>
+                        </div>
+                    </div>
+                </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
 
         <div class="p-4 sidebar-footer" style="border-top: 1px solid var(--glass-border);">
@@ -110,38 +116,59 @@ $peopleDirectory = [
         </div>
 
         <div class="directory-list" id="directoryList">
-            <?php foreach ($peopleDirectory as $letter => $people): ?>
-                <section class="directory-letter-group" data-letter-group>
-                    <div class="directory-letter-heading"><?php echo $letter; ?></div>
+            <?php if (empty($peopleDirectory)): ?>
+                <div class="directory-empty-state">No hay otros usuarios registrados</div>
+            <?php else: ?>
+                <?php foreach ($peopleDirectory as $letter => $people): ?>
+                    <section class="directory-letter-group" data-letter-group>
+                        <div class="directory-letter-heading"><?php echo $letter; ?></div>
                         <div class="directory-people-list">
                             <?php foreach ($people as $person): ?>
-                                <?php
-                                $initials = '';
-                                foreach (explode(' ', trim($person['name'])) as $part) {
-                                    if ($part !== '') {
-                                        $initials .= strtoupper(substr($part, 0, 1));
-                                    }
-                                }
-                                $initials = substr($initials, 0, 2);
-                                ?>
-                                <button type="button" class="directory-person-card" data-person-name="<?php echo strtolower($person['name'] . ' ' . $person['handle']); ?>">
+                                <a href="../index.php?user=<?php echo $person['id']; ?>" class="directory-person-card text-decoration-none" data-person-name="<?php echo strtolower($person['name'] . ' ' . $person['handle']); ?>">
                                     <div class="avatar-wrapper">
-                                        <div class="avatar avatar-initials" aria-label="<?php echo htmlspecialchars($person['name']); ?>"><?php echo htmlspecialchars($initials); ?></div>
+                                        <div class="avatar avatar-initials" aria-label="<?php echo htmlspecialchars($person['name']); ?>">
+                                            <?php echo getInitials($person['name']); ?>
+                                        </div>
                                     </div>
                                     <div class="flex-grow-1 text-start">
-                                        <div class="fw-bold" style="font-size: 0.92rem;"><?php echo htmlspecialchars($person['name']); ?></div>
+                                        <div class="fw-bold" style="color: var(--text-bright); font-size: 0.92rem;"><?php echo htmlspecialchars($person['name']); ?></div>
                                         <div class="directory-person-handle"><?php echo htmlspecialchars($person['handle']); ?></div>
-                                </div>
-                                <i class="bi bi-chat-dots directory-person-icon"></i>
-                            </button>
-                        <?php endforeach; ?>
-                    </div>
-                </section>
-            <?php endforeach; ?>
-
+                                    </div>
+                                    <i class="bi bi-chat-dots directory-person-icon"></i>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </section>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>
+
+<script>
+    // JS Básico para filtrar la lista
+    document.getElementById('directorySearchInput').addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        const groups = document.querySelectorAll('[data-letter-group]');
+        
+        groups.forEach(group => {
+            const cards = group.querySelectorAll('.directory-person-card');
+            let hasVisible = false;
+            
+            cards.forEach(card => {
+                const name = card.getAttribute('data-person-name');
+                if (name.includes(term)) {
+                    card.style.display = 'flex';
+                    hasVisible = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            group.style.display = hasVisible ? 'block' : 'none';
+        });
+    });
+</script>
 
 </body>
 </html>
