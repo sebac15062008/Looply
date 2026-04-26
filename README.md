@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="Looply.png" alt="Looply Logo" width="300"/>
+  <img src="Looply.png" alt="Looply Logo" width="1200"/>
   <h1>Looply</h1>
   <p><strong>Un moderno mini-chat en tiempo real construido con PHP</strong></p>
 </div>
