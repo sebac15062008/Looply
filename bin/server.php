@@ -2,18 +2,18 @@
 use Ratchet\Server\IoServer;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
-use Looply\Chat;
+use Looply\ChatServidor;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$server = IoServer::factory(
+$servidor = IoServer::factory(
     new HttpServer(
         new WsServer(
-            new Chat()
+            new ChatServidor()
         )
     ),
     8081
 );
 
-echo "Server started on port 8081\n";
-$server->run();
+echo "Servidor iniciado en el puerto 8081\n";
+$servidor->run();

@@ -2,47 +2,47 @@
 require_once(__DIR__ . "/../includes/bootstrap.php");
 require_once(__DIR__ . "/../config/database.php");
 require_once(__DIR__ . "/../includes/queries.php");
-redirectIfNotLoggedIn();
+redirigir_si_no_logueado();
 
-$db    = (new connectionDatabase())->con;
-$my_id = $_SESSION['user_id'];
+$bd    = (new ConexionBaseDatos())->con;
+$mi_id = $_SESSION['user_id'];
 
-$errorMsg   = '';
-$successMsg = '';
+$msjError = '';
+$msjExito = '';
 
 // ─── Actualizar perfil ────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
-    $fullName = trim($_POST['full_name'] ?? '');
-    $username = trim($_POST['username']  ?? '');
-    $email    = trim($_POST['email']     ?? '');
-    $bio      = trim($_POST['bio']       ?? '');
+    $nombreCompleto = trim($_POST['full_name'] ?? '');
+    $username       = trim($_POST['username']  ?? '');
+    $email          = trim($_POST['email']     ?? '');
+    $bio            = trim($_POST['bio']       ?? '');
 
-    if (empty($fullName) || empty($username) || empty($email)) {
-        $errorMsg = "Por favor, completa los campos requeridos.";
-    } elseif (q_check_username_taken($db, $username, $my_id)) {
-        $errorMsg = "El nombre de usuario ya está en uso.";
-    } elseif (q_check_email_taken($db, $email, $my_id)) {
-        $errorMsg = "El correo electrónico ya está registrado.";
+    if (empty($nombreCompleto) || empty($username) || empty($email)) {
+        $msjError = "Por favor, completa los campos requeridos.";
+    } elseif (c_verificar_nombre_usuario_tomado($bd, $username, $mi_id)) {
+        $msjError = "El nombre de usuario ya está en uso.";
+    } elseif (c_verificar_email_tomado($bd, $email, $mi_id)) {
+        $msjError = "El correo electrónico ya está registrado.";
     } else {
-        q_update_user_profile($db, $fullName, $username, $email, $bio, $my_id);
-        $successMsg = "Perfil actualizado con éxito.";
+        c_actualizar_perfil_usuario($bd, $nombreCompleto, $username, $email, $bio, $mi_id);
+        $msjExito = "Perfil actualizado con éxito.";
     }
 }
 
 // ─── Datos ────────────────────────────────────────────────────
-$contacts = q_get_sidebar_contacts($db, $my_id);
-$user     = q_get_user_by_id($db, $my_id);
+$contactos = c_obtener_contactos_sidebar($bd, $mi_id);
+$usuario   = c_obtener_usuario_por_id($bd, $mi_id);
 
 
-$pageTitle = "Perfil - Looply";
+$tituloPagina = "Perfil - Looply";
 
-function getInitials($name) {
-    $words = explode(" ", $name);
-    $initials = "";
-    foreach ($words as $w) {
-        if (!empty($w)) $initials .= $w[0];
+function obtener_iniciales($nombre) {
+    $palabras = explode(" ", $nombre);
+    $iniciales = "";
+    foreach ($palabras as $p) {
+        if (!empty($p)) $iniciales .= $p[0];
     }
-    return strtoupper(substr($initials, 0, 2));
+    return strtoupper(substr($iniciales, 0, 2));
 }
 ?>
 <!DOCTYPE html>
@@ -50,8 +50,8 @@ function getInitials($name) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle; ?></title>
-    <?php renderBootstrapHead('..'); ?>
+    <title><?php echo $tituloPagina; ?></title>
+    <?php renderizar_cabecera_bootstrap('..'); ?>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -69,28 +69,34 @@ function getInitials($name) {
         <div class="px-4 py-3">
             <div class="search-wrapper">
                 <i class="bi bi-search"></i>
-                <input type="text" id="sidebarSearch" class="search-input" placeholder="Buscar chat...">
+                <input type="text" id="buscadorSidebar" class="search-input" placeholder="Buscar chat...">
             </div>
         </div>
 
         <div class="contact-list">
-            <?php if (empty($contacts)): ?>
+            <?php if (empty($contactos)): ?>
                 <div class="p-5 text-center" style="color: var(--text-bright);">
                     <i class="bi bi-person-plus mb-3 d-block" style="font-size: 2.5rem; opacity: 0.8;"></i>
                     <p style="font-size: 0.9rem; line-height: 1.4;">No tienes chats activos.<br>Presiona el botón de <b>+ Nuevo chat</b> para empezar a chatear!</p>
                 </div>
             <?php else: ?>
-                <?php foreach ($contacts as $contact): ?>
-                <a href="../index.php?user=<?php echo $contact['id']; ?>" class="contact-item text-decoration-none">
+                <?php foreach ($contactos as $contacto): ?>
+                <a href="../index.php?user=<?php echo $contacto['id']; ?>" class="contact-item text-decoration-none">
                     <div class="avatar-wrapper">
-                        <div class="avatar avatar-initials" aria-label="<?php echo $contact['full_name']; ?>">
-                            <?php echo getInitials($contact['full_name']); ?>
+                        <div class="avatar avatar-initials" aria-label="<?php echo $contacto['full_name']; ?>">
+                            <?php 
+                                $n = $contacto['full_name'];
+                                $p = explode(" ", $n);
+                                $ini = "";
+                                foreach ($p as $w) $ini .= $w[0] ?? '';
+                                echo strtoupper(substr($ini, 0, 2));
+                            ?>
                         </div>
                     </div>
                     <div class="flex-grow-1 overflow-hidden">
-                        <div class="fw-bold" style="color: var(--text-bright); font-size: 0.9rem;"><?php echo htmlspecialchars($contact['full_name']); ?></div>
+                        <div class="fw-bold" style="color: var(--text-bright); font-size: 0.9rem;"><?php echo htmlspecialchars($contacto['full_name']); ?></div>
                         <div class="text-truncate" style="color: var(--text-dim); font-size: 0.75rem;">
-                            <?php echo htmlspecialchars($contact['last_message'] ?? 'Sin mensajes'); ?>
+                            <?php echo htmlspecialchars($contacto['last_message'] ?? 'Sin mensajes'); ?>
                         </div>
                     </div>
                 </a>
@@ -117,32 +123,38 @@ function getInitials($name) {
         </div>
 
         <div class="profile-panel-app">
-            <?php if ($errorMsg): ?>
-                <div class="alert alert-danger" style="border-radius: 14px;"><?php echo htmlspecialchars($errorMsg); ?></div>
+            <?php if ($msjError): ?>
+                <div class="alert alert-danger" style="border-radius: 14px;"><?php echo htmlspecialchars($msjError); ?></div>
             <?php endif; ?>
-            <?php if ($successMsg): ?>
-                <div class="alert alert-success" style="border-radius: 14px; background: var(--panel-bg); color: #00d97e; border-color: #00d97e;"><?php echo htmlspecialchars($successMsg); ?></div>
+            <?php if ($msjExito): ?>
+                <div class="alert alert-success" style="border-radius: 14px; background: var(--panel-bg); color: #00d97e; border-color: #00d97e;"><?php echo htmlspecialchars($msjExito); ?></div>
             <?php endif; ?>
 
-            <div class="profile-card-main" id="view-mode">
+            <div class="profile-card-main" id="modo-vista">
                 <div class="profile-card-head">
                     <div class="profile-card-identity">
                         <div class="profile-avatar-large-wrapper">
-                            <div class="profile-avatar-large avatar-initials avatar-initials-large" aria-label="<?php echo htmlspecialchars($user['full_name']); ?>">
-                                <?php echo getInitials($user['full_name']); ?>
+                            <div class="profile-avatar-large avatar-initials avatar-initials-large" aria-label="<?php echo htmlspecialchars($usuario['full_name']); ?>">
+                                <?php 
+                                    $n = $usuario['full_name'];
+                                    $p = explode(" ", $n);
+                                    $ini = "";
+                                    foreach ($p as $w) $ini .= $w[0] ?? '';
+                                    echo strtoupper(substr($ini, 0, 2));
+                                ?>
                             </div>
                         </div>
 
                         <div class="profile-card-copy">
-                            <h2 class="profile-name-main"><?php echo htmlspecialchars($user['full_name']); ?></h2>
-                            <p class="profile-username-main">@<?php echo htmlspecialchars($user['username']); ?></p>
+                            <h2 class="profile-name-main"><?php echo htmlspecialchars($usuario['full_name']); ?></h2>
+                            <p class="profile-username-main">@<?php echo htmlspecialchars($usuario['username']); ?></p>
                             <p class="profile-description-main">
-                                <?php echo htmlspecialchars($user['bio'] ?? 'Sin biografía.'); ?>
+                                <?php echo htmlspecialchars($usuario['bio'] ?? 'Sin biografía.'); ?>
                             </p>
                         </div>
                     </div>
 
-                    <button class="profile-edit-button" onclick="toggleEditMode()">
+                    <button class="profile-edit-button" onclick="alternarModoEdicion()">
                         <i class="bi bi-pencil-square"></i>
                         <span>Editar perfil</span>
                     </button>
@@ -151,50 +163,50 @@ function getInitials($name) {
                 <div class="profile-meta-grid">
                     <div class="profile-meta-card">
                         <span class="profile-meta-label">Correo</span>
-                        <strong><?php echo htmlspecialchars($user['email']); ?></strong>
+                        <strong><?php echo htmlspecialchars($usuario['email']); ?></strong>
                     </div>
                     <div class="profile-meta-card">
                         <span class="profile-meta-label">Nombre completo</span>
-                        <strong><?php echo htmlspecialchars($user['full_name']); ?></strong>
+                        <strong><?php echo htmlspecialchars($usuario['full_name']); ?></strong>
                     </div>
                     <div class="profile-meta-card">
                         <span class="profile-meta-label">Usuario</span>
-                        <strong>@<?php echo htmlspecialchars($user['username']); ?></strong>
+                        <strong>@<?php echo htmlspecialchars($usuario['username']); ?></strong>
                     </div>
                 </div>
             </div>
 
-            <!-- Edit Mode -->
-            <div class="profile-card-main" id="edit-mode" style="display: none;">
+            <!-- Modo Edición -->
+            <div class="profile-card-main" id="modo-edicion" style="display: none;">
                 <form method="POST" action="">
                     <h4 class="fw-bold mb-4">Editar Perfil</h4>
                     
                     <div class="mb-3">
                         <label class="profile-meta-label mb-2">Nombre Completo</label>
-                        <input type="text" name="full_name" class="input-field-custom w-100" value="<?php echo htmlspecialchars($user['full_name']); ?>" required>
+                        <input type="text" name="full_name" class="input-field-custom w-100" value="<?php echo htmlspecialchars($usuario['full_name']); ?>" required>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="profile-meta-label mb-2">Usuario</label>
-                            <input type="text" name="username" class="input-field-custom w-100" value="<?php echo htmlspecialchars($user['username']); ?>" required>
+                            <input type="text" name="username" class="input-field-custom w-100" value="<?php echo htmlspecialchars($usuario['username']); ?>" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="profile-meta-label mb-2">Correo Electrónico</label>
-                            <input type="email" name="email" class="input-field-custom w-100" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                            <input type="email" name="email" class="input-field-custom w-100" value="<?php echo htmlspecialchars($usuario['email']); ?>" required>
                         </div>
                     </div>
 
                     <div class="mb-4">
                         <label class="profile-meta-label mb-2">Biografía</label>
-                        <textarea name="bio" class="input-field-custom w-100" rows="3"><?php echo htmlspecialchars($user['bio'] ?? ''); ?></textarea>
+                        <textarea name="bio" class="input-field-custom w-100" rows="3"><?php echo htmlspecialchars($usuario['bio'] ?? ''); ?></textarea>
                     </div>
 
                     <div class="d-flex gap-3">
                         <button type="submit" name="update_profile" class="profile-edit-button border-0" style="background: var(--text-bright); color: var(--chat-bg);">
                             <i class="bi bi-check-lg"></i> Guardar cambios
                         </button>
-                        <button type="button" class="profile-edit-button" onclick="toggleEditMode()">
+                        <button type="button" class="profile-edit-button" onclick="alternarModoEdicion()">
                             Cancelar
                         </button>
                     </div>
@@ -259,29 +271,27 @@ function getInitials($name) {
 </nav>
 
 <script>
-    // Toggle Edit Mode
-    function toggleEditMode() {
-        const viewMode = document.getElementById('view-mode');
-        const editMode = document.getElementById('edit-mode');
-        if (viewMode.style.display === 'none') {
-            viewMode.style.display = 'block';
-            editMode.style.display = 'none';
+    function alternarModoEdicion() {
+        const modoVista = document.getElementById('modo-vista');
+        const modoEdicion = document.getElementById('modo-edicion');
+        if (modoVista.style.display === 'none') {
+            modoVista.style.display = 'block';
+            modoEdicion.style.display = 'none';
         } else {
-            viewMode.style.display = 'none';
-            editMode.style.display = 'block';
+            modoVista.style.display = 'none';
+            modoEdicion.style.display = 'block';
         }
     }
 
-    // Sidebar Search Logic
-    const sidebarSearch = document.getElementById('sidebarSearch');
-    if (sidebarSearch) {
-        sidebarSearch.addEventListener('input', function(e) {
-            const term = e.target.value.toLowerCase();
+    const buscadorSidebar = document.getElementById('buscadorSidebar');
+    if (buscadorSidebar) {
+        buscadorSidebar.addEventListener('input', function(e) {
+            const termino = e.target.value.toLowerCase();
             const items = document.querySelectorAll('.contact-item');
             
             items.forEach(item => {
-                const name = item.querySelector('.fw-bold').textContent.toLowerCase();
-                if (name.includes(term)) {
+                const nombre = item.querySelector('.fw-bold').textContent.toLowerCase();
+                if (nombre.includes(termino)) {
                     item.style.display = 'flex';
                 } else {
                     item.style.display = 'none';
@@ -291,5 +301,6 @@ function getInitials($name) {
     }
 </script>
 
+    <?php renderizar_script_bootstrap(); ?>
 </body>
 </html>

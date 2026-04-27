@@ -1,49 +1,44 @@
 <?php
 require_once(__DIR__ . "/../includes/bootstrap.php");
 require_once(__DIR__ . "/../config/database.php");
-redirectIfNotLoggedIn();
+require_once(__DIR__ . "/../includes/queries.php");
+redirigir_si_no_logueado();
 
-$db = (new connectionDatabase())->con;
-$my_id = $_SESSION['user_id'];
+$bd = (new ConexionBaseDatos())->con;
+$mi_id = $_SESSION['user_id'];
 
-$chat_user_id = $_GET['user'] ?? null;
-if (!$chat_user_id) {
+$id_usuario_chat = $_GET['user'] ?? null;
+if (!$id_usuario_chat) {
     header("Location: ../index.php");
     exit();
 }
 
-$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->execute([$chat_user_id]);
-$chat_user = $stmt->fetch();
+$usuario_chat = c_obtener_usuario_por_id($bd, (int)$id_usuario_chat);
 
-if (!$chat_user) {
+if (!$usuario_chat) {
     header("Location: ../index.php");
     exit();
 }
 
-$user_one = min($my_id, $chat_user_id);
-$user_two = max($my_id, $chat_user_id);
+$usuario_uno = min($mi_id, $id_usuario_chat);
+$usuario_dos = max($mi_id, $id_usuario_chat);
 
-$stmt = $db->prepare("SELECT id FROM conversations WHERE user_one = ? AND user_two = ?");
-$stmt->execute([$user_one, $user_two]);
-$conv = $stmt->fetch();
+$conversacion = c_obtener_conversacion($bd, $usuario_uno, $usuario_dos);
 
-$messages = [];
-if ($conv) {
-    $stmt = $db->prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC");
-    $stmt->execute([$conv['id']]);
-    $messages = $stmt->fetchAll();
+$mensajes = [];
+if ($conversacion) {
+    $mensajes = c_obtener_mensajes($bd, $conversacion['id']);
 }
 
-$pageTitle = "Chat con " . $chat_user['full_name'];
+$tituloPagina = "Chat con " . $usuario_chat['full_name'];
 
-function getInitials($name) {
-    $words = explode(" ", $name);
-    $initials = "";
-    foreach ($words as $w) {
-        $initials .= $w[0] ?? '';
+function obtener_iniciales($nombre) {
+    $palabras = explode(" ", $nombre);
+    $iniciales = "";
+    foreach ($palabras as $p) {
+        $iniciales .= $p[0] ?? '';
     }
-    return strtoupper(substr($initials, 0, 2));
+    return strtoupper(substr($iniciales, 0, 2));
 }
 ?>
 <!DOCTYPE html>
@@ -51,8 +46,8 @@ function getInitials($name) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle; ?></title>
-    <?php renderBootstrapHead('..'); ?>
+    <title><?php echo $tituloPagina; ?></title>
+    <?php renderizar_cabecera_bootstrap('..'); ?>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body class="no-mobile-nav">
@@ -76,27 +71,27 @@ function getInitials($name) {
                 </a>
             </div>
             <div class="d-flex align-items-center new-chat-heading-copy">
-                <div class="avatar avatar-initials" aria-label="<?php echo $chat_user['full_name']; ?>">
-                    <?php echo getInitials($chat_user['full_name']); ?>
+                <div class="avatar avatar-initials" aria-label="<?php echo $usuario_chat['full_name']; ?>">
+                    <?php echo obtener_iniciales($usuario_chat['full_name']); ?>
                 </div>
                 <div>
-                    <h5 class="fw-bold mb-0"><?php echo htmlspecialchars($chat_user['full_name']); ?></h5>
+                    <h5 class="fw-bold mb-0"><?php echo htmlspecialchars($usuario_chat['full_name']); ?></h5>
                     <small style="color: var(--text-dim);">Chat</small>
                 </div>
             </div>
         </div>
 
-        <div class="chat-messages" id="chat-messages">
-            <?php if (empty($messages)): ?>
+        <div class="chat-messages" id="mensajes-chat">
+            <?php if (empty($mensajes)): ?>
                 <div class="h-100 d-flex flex-column align-items-center justify-content-center text-white" style="gap: 20px;">
-                    <?php $basePath = '../'; include '../includes/ojos-loader.php'; ?>
-                    <div class="fw-bold opacity-75" style="font-size: 1rem;">Envía un mensaje para poder chatear</div>
+                    <?php $basePath = '../'; include '../includes/loader.php'; ?>
+                    <div class="fw-bold opacity-75" style="font-size: 1rem;">Envía un mensaje para chatear</div>
                 </div>
             <?php else: ?>
-                <?php foreach ($messages as $msg): ?>
-                <div class="message <?php echo ($msg['sender_id'] == $my_id) ? 'sent' : 'received'; ?>">
-                    <?php echo htmlspecialchars($msg['message']); ?>
-                    <span class="message-time"><?php echo date('H:i', strtotime($msg['created_at'])); ?></span>
+                <?php foreach ($mensajes as $msj): ?>
+                <div class="message <?php echo ($msj['sender_id'] == $mi_id) ? 'sent' : 'received'; ?>">
+                    <?php echo htmlspecialchars($msj['message']); ?>
+                    <span class="message-time"><?php echo date('H:i', strtotime($msj['created_at'])); ?></span>
                 </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -105,74 +100,74 @@ function getInitials($name) {
         <div class="input-area">
             <div class="input-wrapper">
                 <i class="bi bi-emoji-smile action-icon me-2"></i>
-                <input type="text" id="message-input" class="input-field" placeholder="Escribe un mensaje...">
-                <i class="bi bi-send-fill action-icon ms-2 send-icon-btn" id="send-btn"></i>
+                <input type="text" id="entrada-mensaje" class="input-field" placeholder="Escribe un mensaje...">
+                <i class="bi bi-send-fill action-icon ms-2 send-icon-btn" id="boton-enviar"></i>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const myId = <?php echo $_SESSION['user_id']; ?>;
-    const chatUserId = <?php echo $chat_user_id; ?>;
+    const miId = <?php echo $_SESSION['user_id']; ?>;
+    const idUsuarioChat = <?php echo $id_usuario_chat; ?>;
     
-    const conn = new WebSocket('ws://localhost:8080');
-    const chatMessages = document.getElementById('chat-messages');
-    const messageInput = document.getElementById('message-input');
-    const sendBtn = document.getElementById('send-btn');
+    const conexion = new WebSocket('ws://127.0.0.1:8081');
+    const contenedorMensajes = document.getElementById('mensajes-chat');
+    const entradaMensaje = document.getElementById('entrada-mensaje');
+    const botonEnviar = document.getElementById('boton-enviar');
 
-    conn.onopen = function(e) {
-        conn.send(JSON.stringify({
+    conexion.onopen = function(e) {
+        conexion.send(JSON.stringify({
             type: 'auth',
-            user_id: myId
+            user_id: miId
         }));
     };
 
-    conn.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        if (data.type === 'message' && data.sender_id == chatUserId) {
-            appendMessage(data.message, 'received', data.created_at);
+    conexion.onmessage = function(e) {
+        const datos = JSON.parse(e.data);
+        if (datos.type === 'message' && datos.sender_id == idUsuarioChat) {
+            agregarMensaje(datos.message, 'received', datos.created_at);
         }
     };
 
-    sendBtn.onclick = function() {
-        sendMessage();
+    botonEnviar.onclick = function() {
+        enviarMensaje();
     };
 
-    messageInput.onkeypress = function(e) {
+    entradaMensaje.onkeypress = function(e) {
         if (e.key === 'Enter') {
-            sendMessage();
+            enviarMensaje();
         }
     };
 
-    function sendMessage() {
-        const message = messageInput.value.trim();
-        if (message !== "") {
-            conn.send(JSON.stringify({
+    function enviarMensaje() {
+        const texto = entradaMensaje.value.trim();
+        if (texto !== "") {
+            conexion.send(JSON.stringify({
                 type: 'message',
-                sender_id: myId,
-                receiver_id: chatUserId,
-                message: message
+                sender_id: miId,
+                receiver_id: idUsuarioChat,
+                message: texto
             }));
-            appendMessage(message, 'sent', new Date().toLocaleTimeString());
-            messageInput.value = "";
+            agregarMensaje(texto, 'sent', new Date().toLocaleTimeString());
+            entradaMensaje.value = "";
         }
     }
 
-    function appendMessage(text, type, time) {
+    function agregarMensaje(texto, tipo, hora) {
         const div = document.createElement('div');
-        div.className = 'message ' + type;
-        const timeStr = time.includes(':') ? time.split(' ')[0].substring(0, 5) : time;
-        div.innerHTML = htmlEntities(text) + '<span class="message-time">' + timeStr + '</span>';
-        chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        div.className = 'message ' + tipo;
+        const cadenaHora = hora.includes(':') ? hora.split(' ')[1]?.substring(0, 5) || hora : hora;
+        div.innerHTML = entidadesHtml(texto) + '<span class="message-time">' + cadenaHora + '</span>';
+        contenedorMensajes.appendChild(div);
+        contenedorMensajes.scrollTop = contenedorMensajes.scrollHeight;
     }
 
-    function htmlEntities(str) {
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    function entidadesHtml(cadena) {
+        return String(cadena).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
     
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    contenedorMensajes.scrollTop = contenedorMensajes.scrollHeight;
 </script>
 
 </body>

@@ -3,28 +3,28 @@ require_once(__DIR__ . "/../includes/bootstrap.php");
 require_once(__DIR__ . "/../config/database.php");
 require_once(__DIR__ . "/../includes/queries.php");
 
-$error = "";
+$msjError = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $full_name = trim($_POST['full_name'] ?? '');
-    $username  = trim($_POST['username']  ?? '');
-    $email     = trim($_POST['email']     ?? '');
-    $password  = trim($_POST['password']  ?? '');
+    $nombre_completo = trim($_POST['full_name'] ?? '');
+    $username        = trim($_POST['username']  ?? '');
+    $email           = trim($_POST['email']     ?? '');
+    $password        = trim($_POST['password']  ?? '');
 
-    if (!empty($full_name) && !empty($username) && !empty($email) && !empty($password)) {
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $db = (new connectionDatabase())->con;
+    if (!empty($nombre_completo) && !empty($username) && !empty($email) && !empty($password)) {
+        $clave_hash = password_hash($password, PASSWORD_DEFAULT);
+        $bd = (new ConexionBaseDatos())->con;
 
         try {
-            q_insert_user($db, $full_name, $username, $email, $hashed_password);
+            c_insertar_usuario($bd, $nombre_completo, $username, $email, $clave_hash);
             header("Location: login.php?registered=1");
             exit();
         } catch (PDOException $e) {
-            $error = ($e->getCode() == 23000)
+            $msjError = ($e->getCode() == 23000)
                 ? "El usuario o correo ya existe."
                 : "Error al registrar: " . $e->getMessage();
         }
     } else {
-        $error = "Todos los campos son obligatorios.";
+        $msjError = "Todos los campos son obligatorios.";
     }
 }
 ?>
@@ -45,12 +45,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <h2 style="color: var(--text-bright); font-weight: bold;">Looply</h2>
     </div>
 
-  <?php if ($error): ?>
-      <div class="alert alert-danger" style="font-size: 0.8rem; padding: 5px 10px;"><?php echo $error; ?></div>
+  <?php if ($msjError): ?>
+      <div class="alert alert-danger" style="font-size: 0.8rem; padding: 5px 10px;"><?php echo $msjError; ?></div>
   <?php endif; ?>
 
   <div class="flex-column">
-    <label>Name </label>
+    <label>Nombre Completo</label>
   </div>
   <div class="inputForm">
     <svg
@@ -65,21 +65,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ></path>
       </g>
     </svg>
-    <input type="text" name="full_name" class="input" placeholder="Enter your Name" required />
+    <input type="text" name="full_name" class="input" placeholder="Ingresa tu nombre" required />
   </div>
 
   <div class="flex-column">
-    <label>Username </label>
+    <label>Nombre de Usuario</label>
   </div>
   <div class="inputForm">
     <svg height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #8b8e98;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-    <input type="text" name="username" class="input" placeholder="Enter your Username" required />
+    <input type="text" name="username" class="input" placeholder="Crea un nombre de usuario" required />
   </div>
 
   <div class="input-spacer" style="margin-top: 10px;"></div>
 
   <div class="flex-column">
-    <label>Email </label>
+    <label>Correo Electrónico</label>
   </div>
   <div class="inputForm">
     <svg
@@ -94,11 +94,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ></path>
       </g>
     </svg>
-    <input type="email" name="email" class="input" placeholder="Enter your Email" required />
+    <input type="email" name="email" class="input" placeholder="Ingresa tu correo" required />
   </div>
 
   <div class="flex-column">
-    <label>Password </label>
+    <label>Contraseña</label>
   </div>
   <div class="inputForm">
     <svg
@@ -114,11 +114,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         d="m304 224c-8.832031 0-16-7.167969-16-16v-80c0-52.929688-43.070312-96-96-96s-96 43.070312-96 96v80c0 8.832031-7.167969 16-16 16s-16-7.167969-16-16v-80c0-70.59375 57.40625-128 128-128s128 57.40625 128 128v80c0 8.832031-7.167969 16-16 16zm0 0"
       ></path>
     </svg>
-    <input type="password" name="password" class="input" placeholder="Enter your Password" required />
+    <input type="password" name="password" class="input" placeholder="Crea una contraseña" required />
   </div>
 
-  <button type="submit" class="button-submit">Sign Up</button>
-  <p class="p">Already have a account? <a href="login.php" class="span">login</a></p>
+  <button type="submit" class="button-submit">Registrarse</button>
+  <p class="p">¿Ya tienes cuenta? <a href="login.php" class="span">Inicia sesión</a></p>
 </form>
 
 </body>

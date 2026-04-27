@@ -1,40 +1,40 @@
 <?php
 
-$ERROR_CONNECTION = false;
-$ERROR_CONNECTION_MESSAGES = "";
+$ERROR_CONEXION = false;
+$MENSAJES_ERROR_CONEXION = "";
 
-class connectionDatabase
+class ConexionBaseDatos
 {
   private string $DB_HOST     = "localhost";
   private string $DB_PORT     = "3306";
-  private string $DB_DATABASE = "looply_db";
-  private string $DB_USERNAME = "root";
+  private string $DB_BASE     = "looply_db";
+  private string $DB_USUARIO  = "root";
 
-  private string $DB_PASSWORD = "";
+  private string $DB_CLAVE    = "";
   public  $con;
 
   public function __construct()
   {
-    $options = [
+    $opciones = [
       PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
       PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
       PDO::ATTR_EMULATE_PREPARES   => false,
     ];
 
     try {
-      $dsn        = "mysql:host={$this->DB_HOST};port={$this->DB_PORT};dbname={$this->DB_DATABASE};charset=utf8mb4";
-      $this->con  = new PDO($dsn, $this->DB_USERNAME, $this->DB_PASSWORD, $options);
+      $dsn        = "mysql:host={$this->DB_HOST};port={$this->DB_PORT};dbname={$this->DB_BASE};charset=utf8mb4";
+      $this->con  = new PDO($dsn, $this->DB_USUARIO, $this->DB_CLAVE, $opciones);
     } catch (PDOException $e) {
-      global $ERROR_CONNECTION, $ERROR_CONNECTION_MESSAGES;
-      $ERROR_CONNECTION          = true;
-      $ERROR_CONNECTION_MESSAGES = $e->getMessage();
+      global $ERROR_CONEXION, $MENSAJES_ERROR_CONEXION;
+      $ERROR_CONEXION          = true;
+      $MENSAJES_ERROR_CONEXION = $e->getMessage();
     }
   }
 }
 
-$PRUEBA_DE_CONEXION = new connectionDatabase();
+$PRUEBA_DE_CONEXION = new ConexionBaseDatos();
 
-if ($ERROR_CONNECTION) {
+if ($ERROR_CONEXION) {
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -55,9 +55,9 @@ if ($ERROR_CONNECTION) {
 <body>
   <h1>503</h1>
   <p>El servidor MySQL no está disponible. Revisa tu conexión e intenta de nuevo.</p>
-  <pre><?php echo htmlspecialchars($ERROR_CONNECTION_MESSAGES); ?></pre>
+  <pre><?php echo htmlspecialchars($MENSAJES_ERROR_CONEXION); ?></pre>
 </body>
 </html>
 <?php
   die();
-}
+}

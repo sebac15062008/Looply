@@ -1,63 +1,50 @@
 <?php
-/**
- * includes/queries.php
- * ─────────────────────────────────────────────────────────────
- * Capa de acceso a datos (DAL) de Looply.
- * Todas las consultas SQL del proyecto están aquí centralizadas.
- * Ningún archivo PHP debe escribir SQL directamente.
- * ─────────────────────────────────────────────────────────────
- */
 
-
-// ═══════════════════════════════════════════════════════════════
-//  USUARIOS
-// ═══════════════════════════════════════════════════════════════
-
-function q_get_user_by_id(PDO $db, int $id): array|false
+function c_obtener_usuario_por_id(PDO $bd, int $id): array|false
 {
-    $stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
-    $stmt->execute([$id]);
-    return $stmt->fetch();
+    $sentencia = $bd->prepare('SELECT * FROM users WHERE id = ?');
+    $sentencia->execute([$id]);
+    return $sentencia->fetch();
 }
 
-function q_get_user_by_email(PDO $db, string $email): array|false
+function c_obtener_usuario_por_email(PDO $bd, string $email): array|false
 {
-    $stmt = $db->prepare('SELECT * FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    return $stmt->fetch();
+    $sentencia = $bd->prepare('SELECT * FROM users WHERE email = ?');
+    $sentencia->execute([$email]);
+    return $sentencia->fetch();
 }
 
-function q_check_username_taken(PDO $db, string $username, int $exclude_id): array|false
+function c_verificar_nombre_usuario_tomado(PDO $bd, string $usuario, int $id_excluido): array|false
 {
-    $stmt = $db->prepare('SELECT id FROM users WHERE username = ? AND id != ?');
-    $stmt->execute([$username, $exclude_id]);
-    return $stmt->fetch();
+    $sentencia = $bd->prepare('SELECT id FROM users WHERE username = ? AND id != ?');
+    $sentencia->execute([$usuario, $id_excluido]);
+    return $sentencia->fetch();
 }
 
-function q_check_email_taken(PDO $db, string $email, int $exclude_id): array|false
+function c_verificar_email_tomado(PDO $bd, string $email, int $id_excluido): array|false
 {
-    $stmt = $db->prepare('SELECT id FROM users WHERE email = ? AND id != ?');
-    $stmt->execute([$email, $exclude_id]);
-    return $stmt->fetch();
+    $sentencia = $bd->prepare('SELECT id FROM users WHERE email = ? AND id != ?');
+    $sentencia->execute([$email, $id_excluido]);
+    return $sentencia->fetch();
 }
 
-function q_insert_user(PDO $db, string $full_name, string $username, string $email, string $password): void
+function c_insertar_usuario(PDO $bd, string $nombre_completo, string $usuario, string $email, string $contrasena): void
 {
-    $stmt = $db->prepare('INSERT INTO users (full_name, username, email, password) VALUES (?, ?, ?, ?)');
-    $stmt->execute([$full_name, $username, $email, $password]);
+    $sentencia = $bd->prepare('INSERT INTO users (full_name, username, email, password) VALUES (?, ?, ?, ?)');
+    $sentencia->execute([$nombre_completo, $usuario, $email, $contrasena]);
 }
 
-function q_update_user_profile(PDO $db, string $full_name, string $username, string $email, string $bio, int $id): void
+function c_actualizar_perfil_usuario(PDO $bd, string $nombre_completo, string $usuario, string $email, string $biografia, int $id): void
 {
-    $stmt = $db->prepare('UPDATE users SET full_name = ?, username = ?, email = ?, bio = ? WHERE id = ?');
-    $stmt->execute([$full_name, $username, $email, $bio, $id]);
+    $sentencia = $bd->prepare('UPDATE users SET full_name = ?, username = ?, email = ?, bio = ? WHERE id = ?');
+    $sentencia->execute([$nombre_completo, $usuario, $email, $biografia, $id]);
 }
 
-function q_get_all_users_except_me(PDO $db, int $my_id): array
+function c_obtener_todos_los_usuarios_menos_yo(PDO $bd, int $mi_id): array
 {
-    $stmt = $db->prepare('SELECT id, full_name, username FROM users WHERE id != ? ORDER BY full_name ASC');
-    $stmt->execute([$my_id]);
-    return $stmt->fetchAll();
+    $sentencia = $bd->prepare('SELECT id, full_name, username FROM users WHERE id != ? ORDER BY full_name ASC');
+    $sentencia->execute([$mi_id]);
+    return $sentencia->fetchAll();
 }
 
 
@@ -65,48 +52,47 @@ function q_get_all_users_except_me(PDO $db, int $my_id): array
 //  CONVERSACIONES
 // ═══════════════════════════════════════════════════════════════
 
-function q_get_conversation(PDO $db, int $user_one, int $user_two): array|false
+function c_obtener_conversacion(PDO $bd, int $usuario_uno, int $usuario_dos): array|false
 {
-    $stmt = $db->prepare('SELECT * FROM conversations WHERE user_one = ? AND user_two = ?');
-    $stmt->execute([$user_one, $user_two]);
-    return $stmt->fetch();
+    $sentencia = $bd->prepare('SELECT * FROM conversations WHERE user_one = ? AND user_two = ?');
+    $sentencia->execute([$usuario_uno, $usuario_dos]);
+    return $sentencia->fetch();
 }
 
-function q_insert_conversation(PDO $db, int $user_one, int $user_two): string
+function c_insertar_conversacion(PDO $bd, int $usuario_uno, int $usuario_dos): string
 {
-    $stmt = $db->prepare('INSERT INTO conversations (user_one, user_two) VALUES (?, ?)');
-    $stmt->execute([$user_one, $user_two]);
-    return $db->lastInsertId();
+    $sentencia = $bd->prepare('INSERT INTO conversations (user_one, user_two) VALUES (?, ?)');
+    $sentencia->execute([$usuario_uno, $usuario_dos]);
+    return $bd->lastInsertId();
 }
 
-function q_touch_conversation(PDO $db, int $conv_id): void
+function c_actualizar_fecha_conversacion(PDO $bd, int $id_conv): void
 {
-    $stmt = $db->prepare('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?');
-    $stmt->execute([$conv_id]);
+    $sentencia = $bd->prepare('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?');
+    $sentencia->execute([$id_conv]);
 }
 
-function q_clear_chat(PDO $db, int $user_one, int $user_two, bool $is_user_one): void
+function c_limpiar_chat(PDO $bd, int $usuario_uno, int $usuario_dos, bool $es_usuario_uno): void
 {
-    $col  = $is_user_one ? 'cleared_at_user_one' : 'cleared_at_user_two';
-    $stmt = $db->prepare("UPDATE conversations SET $col = CURRENT_TIMESTAMP WHERE user_one = ? AND user_two = ?");
-    $stmt->execute([$user_one, $user_two]);
+    $columna = $es_usuario_uno ? 'cleared_at_user_one' : 'cleared_at_user_two';
+    $sentencia = $bd->prepare("UPDATE conversations SET $columna = CURRENT_TIMESTAMP WHERE user_one = ? AND user_two = ?");
+    $sentencia->execute([$usuario_uno, $usuario_dos]);
 }
 
-function q_delete_chat(PDO $db, int $user_one, int $user_two, bool $is_user_one): void
+function c_eliminar_chat(PDO $bd, int $usuario_uno, int $usuario_dos, bool $es_usuario_uno): void
 {
-    $col_cleared = $is_user_one ? 'cleared_at_user_one' : 'cleared_at_user_two';
-    $col_hidden  = $is_user_one ? 'hidden_by_user_one'  : 'hidden_by_user_two';
-    $stmt = $db->prepare("UPDATE conversations SET $col_cleared = CURRENT_TIMESTAMP, $col_hidden = TRUE WHERE user_one = ? AND user_two = ?");
-    $stmt->execute([$user_one, $user_two]);
+    $col_limpia = $es_usuario_uno ? 'cleared_at_user_one' : 'cleared_at_user_two';
+    $col_oculta  = $es_usuario_uno ? 'hidden_by_user_one'  : 'hidden_by_user_two';
+    $sentencia = $bd->prepare("UPDATE conversations SET $col_limpia = CURRENT_TIMESTAMP, $col_oculta = TRUE WHERE user_one = ? AND user_two = ?");
+    $sentencia->execute([$usuario_uno, $usuario_dos]);
 }
 
 /**
  * Devuelve los contactos visibles en el sidebar para el usuario dado.
- * Respeta soft-deletes (cleared_at) y chats ocultos (hidden_by).
  */
-function q_get_sidebar_contacts(PDO $db, int $my_id): array
+function c_obtener_contactos_sidebar(PDO $bd, int $mi_id): array
 {
-    $stmt = $db->prepare("
+    $sentencia = $bd->prepare("
         SELECT u.id, u.full_name, u.username,
         (
             SELECT m.message FROM messages m
@@ -130,12 +116,12 @@ function q_get_sidebar_contacts(PDO $db, int $my_id): array
           )
         ORDER BY conv.last_message_at DESC
     ");
-    $stmt->execute([
-        'uid1' => $my_id, 'uid2' => $my_id, 'uid3' => $my_id,
-        'uid4' => $my_id, 'uid5' => $my_id, 'uid6' => $my_id,
-        'uid7' => $my_id, 'uid8' => $my_id, 'uid9' => $my_id,
+    $sentencia->execute([
+        'uid1' => $mi_id, 'uid2' => $mi_id, 'uid3' => $mi_id,
+        'uid4' => $mi_id, 'uid5' => $mi_id, 'uid6' => $mi_id,
+        'uid7' => $mi_id, 'uid8' => $mi_id, 'uid9' => $mi_id,
     ]);
-    return $stmt->fetchAll();
+    return $sentencia->fetchAll();
 }
 
 
@@ -145,24 +131,23 @@ function q_get_sidebar_contacts(PDO $db, int $my_id): array
 
 /**
  * Obtiene los mensajes de una conversación.
- * Si se pasa $since (TIMESTAMP), sólo devuelve los posteriores a esa fecha (post soft-delete).
  */
-function q_get_messages(PDO $db, int $conv_id, ?string $since = null): array
+function c_obtener_mensajes(PDO $bd, int $id_conv, ?string $desde = null): array
 {
-    if ($since) {
-        $stmt = $db->prepare('SELECT * FROM messages WHERE conversation_id = ? AND created_at > ? ORDER BY created_at ASC');
-        $stmt->execute([$conv_id, $since]);
+    if ($desde) {
+        $sentencia = $bd->prepare('SELECT * FROM messages WHERE conversation_id = ? AND created_at > ? ORDER BY created_at ASC');
+        $sentencia->execute([$id_conv, $desde]);
     } else {
-        $stmt = $db->prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC');
-        $stmt->execute([$conv_id]);
+        $sentencia = $bd->prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC');
+        $sentencia->execute([$id_conv]);
     }
-    return $stmt->fetchAll();
+    return $sentencia->fetchAll();
 }
 
-function q_insert_message(PDO $db, int $conv_id, int $sender_id, string $message): void
+function c_insertar_mensaje(PDO $bd, int $id_conv, int $id_remitente, string $mensaje): void
 {
-    $stmt = $db->prepare('INSERT INTO messages (conversation_id, sender_id, message) VALUES (?, ?, ?)');
-    $stmt->execute([$conv_id, $sender_id, $message]);
+    $sentencia = $bd->prepare('INSERT INTO messages (conversation_id, sender_id, message) VALUES (?, ?, ?)');
+    $sentencia->execute([$id_conv, $id_remitente, $mensaje]);
 }
 
 
@@ -170,21 +155,21 @@ function q_insert_message(PDO $db, int $conv_id, int $sender_id, string $message
 //  BLOQUEOS
 // ═══════════════════════════════════════════════════════════════
 
-function q_get_blocks_between(PDO $db, int $my_id, int $other_id): array
+function c_obtener_bloqueos_entre(PDO $bd, int $mi_id, int $otro_id): array
 {
-    $stmt = $db->prepare('SELECT blocker_id, blocked_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)');
-    $stmt->execute([$my_id, $other_id, $other_id, $my_id]);
-    return $stmt->fetchAll();
+    $sentencia = $bd->prepare('SELECT blocker_id, blocked_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)');
+    $sentencia->execute([$mi_id, $otro_id, $otro_id, $mi_id]);
+    return $sentencia->fetchAll();
 }
 
-function q_block_user(PDO $db, int $blocker_id, int $blocked_id): void
+function c_bloquear_usuario(PDO $bd, int $id_bloqueador, int $id_bloqueado): void
 {
-    $stmt = $db->prepare('INSERT IGNORE INTO blocks (blocker_id, blocked_id) VALUES (?, ?)');
-    $stmt->execute([$blocker_id, $blocked_id]);
+    $sentencia = $bd->prepare('INSERT IGNORE INTO blocks (blocker_id, blocked_id) VALUES (?, ?)');
+    $sentencia->execute([$id_bloqueador, $id_bloqueado]);
 }
 
-function q_unblock_user(PDO $db, int $blocker_id, int $blocked_id): void
+function c_desbloquear_usuario(PDO $bd, int $id_bloqueador, int $id_bloqueado): void
 {
-    $stmt = $db->prepare('DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?');
-    $stmt->execute([$blocker_id, $blocked_id]);
+    $sentencia = $bd->prepare('DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?');
+    $sentencia->execute([$id_bloqueador, $id_bloqueado]);
 }
